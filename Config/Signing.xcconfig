@@ -1,0 +1,7 @@
+// Default: sign to run locally (ad-hoc). Works for anyone, no Apple account needed.
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+
+// Optional, git-ignored overrides, e.g. your own team so Keychain access survives rebuilds.
+// Copy Signing.local.xcconfig.example to Signing.local.xcconfig to use it.
+#include? "Signing.local.xcconfig"

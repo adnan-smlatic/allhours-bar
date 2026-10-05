@@ -1,0 +1,16 @@
+# Xcode
+build/
+dist/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+Config/Signing.local.xcconfig
+
+# Website
+website/node_modules/
+website/.next/
+website/out/
+website/next-env.d.ts
+website/*.tsbuildinfo
+
+.DS_Store

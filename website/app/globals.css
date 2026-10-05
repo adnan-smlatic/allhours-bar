@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@theme {
+  /* The slate from the installer window, plus time-card paper and ink. */
+  --color-board: #4f6076;
+  --color-board-deep: #3d4b5f;
+  --color-ink: #111925;
+  --color-mist: #ebf0f4;
+  --color-ledger: #e2ece4;
+  --color-paper: #f4f8f2;
+  --color-rule: #c4d5c9;
+  --color-signal: #3ddbb0;
+  --color-stamp: #cf3b36;
+  --color-ocean: #1a6bcc;
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-dots: var(--font-doto), var(--font-plex-mono), monospace;
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+}
+
+@utility wide {
+  font-stretch: 125%;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--color-board);
+    color: var(--color-mist);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-ink);
+  }
+}
+
+/* Slate board with the brand glows and dot grid, shared with the DMG window. */
+.board {
+  background:
+    radial-gradient(56rem 36rem at 6% -8%, rgb(43 199 158 / 0.36), transparent 62%),
+    radial-gradient(48rem 38rem at 104% 108%, rgb(26 107 204 / 0.5), transparent 62%),
+    linear-gradient(180deg, #5c6d83, #4a5a6f);
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 0.075) 1px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+/* ---- Menu bar demo ------------------------------------------------------ */
+
+/* Counts the menu bar item up from 0:00 to 6:38 (398 minutes) on load, in pure CSS. */
+@property --worked {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --hours {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --mins {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.worked-clock {
+  --worked: 398;
+  --hours: calc((var(--worked) - 29.5) / 60); /* integers round, so this floors */
+  --mins: calc(var(--worked) - var(--hours) * 60);
+  counter-reset: h var(--hours) m var(--mins);
+}
+.worked-clock::after {
+  content: counter(h) ":" counter(m, decimal-leading-zero);
+}
+
+.menu-item > summary {
+  list-style: none;
+}
+.menu-item > summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .worked-clock {
+    animation: count-up 1.7s cubic-bezier(0.16, 0.8, 0.2, 1) 0.35s both;
+  }
+  .menu-item[open] .popover {
+    animation: drop 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+  }
+}
+
+@keyframes count-up {
+  from {
+    --worked: 0;
+  }
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+/* ---- Time card ----------------------------------------------------------- */
+
+.punch-holes {
+  background-image: radial-gradient(circle at center, var(--color-ledger) 0 5px, var(--color-rule) 5px 6px, transparent 6.5px);
+  background-size: 100% 44px;
+  background-position: center 22px;
+}
+
+/* Two square dots sized to Doto's grid. */
+.dot-colon {
+  display: inline-block;
+  width: 0.1em;
+  height: 0.5em;
+  margin: 0.04em 0.12em 0;
+  background:
+    linear-gradient(currentColor, currentColor) top / 100% 0.1em no-repeat,
+    linear-gradient(currentColor, currentColor) bottom / 100% 0.1em no-repeat;
+}
