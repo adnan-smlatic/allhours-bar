@@ -40,9 +40,12 @@ struct ClockingDefinition: Decodable {
 }
 
 /// `GET /api/v1/Clockings[/Personal]`
+/// `timestamp` is rounded to the minute and same-minute clockings come back in no particular
+/// order, so `createdOn` (millisecond precision) is what tells their real order.
 struct Clocking: Decodable {
     var id: String
     var timestamp: String?
+    var createdOn: String?
     var userId: String?
     var clockingDefinitionId: String?
     var clockingDefinitionName: String?

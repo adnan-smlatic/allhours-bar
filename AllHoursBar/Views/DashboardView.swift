@@ -3,6 +3,7 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AttendanceStore.self) private var store
     @Binding var showSettings: Bool
+    @AppStorage(Prefs.showDayDetails) private var showDetails = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -18,7 +19,7 @@ struct DashboardView: View {
                 )
             }
             if !store.events.isEmpty { timeline }
-            stats
+            details
             Divider().padding(.horizontal, -14)
             footer
         }
@@ -71,7 +72,7 @@ struct DashboardView: View {
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(Fmt.duration(day.worked))
+                    Text(store.lastUpdated == nil ? "–" : Fmt.duration(day.worked))
                         .font(.system(size: 34, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText())
@@ -235,6 +236,32 @@ struct DashboardView: View {
     }
 
     // MARK: Stats
+
+    /// Balance, breaks and vacation, collapsed until asked for.
+    private var details: some View {
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(.snappy(duration: 0.2)) { showDetails.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text("Balance, breaks & vacation")
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .bold))
+                        .rotationEffect(.degrees(showDetails ? 180 : 0))
+                }
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(showDetails ? "Shown" : "Hidden")
+
+            if showDetails {
+                stats.transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
 
     private var stats: some View {
         let day = store.day

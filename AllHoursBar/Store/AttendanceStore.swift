@@ -34,6 +34,8 @@ struct DayEvent: Identifiable, Equatable {
     let date: Date
     let name: String
     let kind: ClockingKind
+    /// When the clocking was registered; orders clockings that share the same minute.
+    var recordedAt: Date?
 }
 
 struct DayStats {
@@ -387,10 +389,11 @@ final class AttendanceStore {
                     id: clocking.id,
                     date: date,
                     name: clocking.clockingDefinitionName ?? "Clocking",
-                    kind: kind(for: clocking.clockingDefinitionId ?? "", name: clocking.clockingDefinitionName)
+                    kind: kind(for: clocking.clockingDefinitionId ?? "", name: clocking.clockingDefinitionName),
+                    recordedAt: APIDate.parse(clocking.createdOn)
                 )
             }
-            .sorted { $0.date < $1.date }
+            .sorted { ($0.date, $0.recordedAt ?? $0.date) < ($1.date, $1.recordedAt ?? $1.date) }
     }
 
     private func kind(for definitionId: String, name: String?) -> ClockingKind {
@@ -535,6 +538,12 @@ final class AttendanceStore {
         if let working = workingSince, status?.isWorking ?? true {
             stats.worked += now.timeIntervalSince(working)
             stats.openSince = working
+        } else if status?.isWorking == true, pausedSince == nil,
+                  let since = APIDate.parse(presence?.eventTimestamp) {
+            // All Hours says you're in, but the clockings didn't show an open stretch: trust the status.
+            let from = max(since, timeline.last?.date ?? start)
+            stats.worked += now.timeIntervalSince(from)
+            stats.openSince = from
         } else if let paused = pausedSince {
             if status?.isWorking == true {
                 stats.worked += now.timeIntervalSince(paused) // e.g. an off-site work trip
@@ -589,7 +598,8 @@ final class AttendanceStore {
     }
 
     var menuBarText: String? {
-        guard phase == .signedIn, let status else { return nil }
+        // Wait for the first full refresh: the status arrives before today's clockings.
+        guard phase == .signedIn, lastUpdated != nil, let status else { return nil }
         if status.isWorking { return Fmt.clock(day.worked) }
         if status.isPaused, let since = day.openSince { return Fmt.clock(now.timeIntervalSince(since)) }
         return nil

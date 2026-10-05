@@ -20,10 +20,14 @@ enum APIDate {
     /// Timestamps without a zone are local time, which is how the web app reads them too.
     static func parse(_ string: String?) -> Date? {
         guard var string, string.count >= 19 else { return nil }
-        string = string.replacingOccurrences(of: #"\.\d+"#, with: "", options: .regularExpression)
+        var fraction = 0.0
+        if let match = string.range(of: #"\.\d+"#, options: .regularExpression) {
+            fraction = Double("0" + string[match]) ?? 0
+            string.removeSubrange(match)
+        }
         let date = string.count > 19 ? zoned.date(from: string) : local.date(from: string)
         guard let date, Calendar.current.component(.year, from: date) > 1 else { return nil }
-        return date
+        return date.addingTimeInterval(fraction)
     }
 
     static func string(_ date: Date) -> String {

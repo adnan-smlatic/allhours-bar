@@ -3,6 +3,7 @@ import Foundation
 /// UserDefaults keys. Views read them through @AppStorage with the same defaults.
 enum Prefs {
     static let showTimer = "showTimerInMenuBar"
+    static let showDayDetails = "showDayDetails"
     static let remindClockIn = "remindClockIn"
     static let remindClockInAfter = "remindClockInAfter"
     static let remindClockOut = "remindClockOut"
