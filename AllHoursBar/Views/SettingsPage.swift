@@ -4,6 +4,7 @@ import UserNotifications
 
 struct SettingsPage: View {
     @Environment(AttendanceStore.self) private var store
+    @Environment(Updates.self) private var updates
     @Binding var isPresented: Bool
 
     @AppStorage(Prefs.showTimer) private var showTimer = true
@@ -89,10 +90,27 @@ struct SettingsPage: View {
                 }
             }
 
+            section("Updates") {
+                row("Check for updates automatically") {
+                    Toggle("", isOn: Bindable(updates).checksAutomatically).labelsHidden()
+                }
+                row("Install updates automatically") {
+                    Toggle("", isOn: Bindable(updates).installsAutomatically).labelsHidden()
+                        .disabled(!updates.checksAutomatically)
+                }
+                Text("Once a week the app downloads a small file from GitHub to look for a new version. Automatic updates install the next time the app quits.")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Divider()
+                row("Version \(updates.version)") {
+                    Button("Check Now…") { updates.checkNow() }
+                        .controlSize(.small)
+                        .disabled(!updates.canCheck)
+                }
+            }
+
             HStack {
-                Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
                     .controlSize(.small)

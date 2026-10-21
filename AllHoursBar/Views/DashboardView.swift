@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(AttendanceStore.self) private var store
+    @Environment(Updates.self) private var updates
     @Binding var showSettings: Bool
     @AppStorage(Prefs.showDayDetails) private var showDetails = false
 
@@ -20,6 +21,7 @@ struct DashboardView: View {
             }
             if !store.events.isEmpty { timeline }
             details
+            if let pending = updates.pending { updateNotice(pending) }
             Divider().padding(.horizontal, -14)
             footer
         }
@@ -278,6 +280,26 @@ struct DashboardView: View {
     private func vacationText(_ days: Double) -> String {
         let value = days.rounded() == days ? String(Int(days)) : String(format: "%.1f", days)
         return "\(value) \(days == 1 ? "day" : "days")"
+    }
+
+    // MARK: Update
+
+    /// Found by a scheduled check. Sparkle's window only opens when asked.
+    private func updateNotice(_ pending: Updates.Pending) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundStyle(Color.accentColor)
+            Text(pending.isReady ? "Version \(pending.version) is ready to install" : "Version \(pending.version) is available")
+                .font(.system(size: 12))
+            Spacer(minLength: 4)
+            Button(pending.isReady ? "Install…" : "Update…") { updates.checkNow() }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06)))
     }
 
     // MARK: Footer

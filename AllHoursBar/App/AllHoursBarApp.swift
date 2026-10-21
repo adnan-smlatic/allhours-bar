@@ -9,6 +9,7 @@ struct AllHoursBarApp: App {
         MenuBarExtra {
             PopoverRoot()
                 .environment(store)
+                .environment(Updates.shared)
         } label: {
             MenuBarLabel()
                 .environment(store)
@@ -24,6 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AttendanceStore.shared.start()
         #if DEBUG
         DemoMode.presentIfRequested(store: AttendanceStore.shared)
+        if DemoMode.isOn { return }
         #endif
+        Updates.shared.start()
     }
 }

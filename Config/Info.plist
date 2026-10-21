@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sparkle. The feed is the appcast.xml attached to the latest GitHub release. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/adnan-smlatic/allhours-bar/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>sWdeielw2C5kmcN3bjwY5yCvW1WETqEBQutq5ZeOec4=</string>
+	<!-- The feed and the update are both checked against that key before anything is unpacked. -->
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<!-- On by default (toggle in Settings), but rare: one small request a week. -->
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>604800</integer>
+</dict>
+</plist>

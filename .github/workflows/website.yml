@@ -1,39 +1,40 @@
-# Publishes website/ to GitHub Pages. Enable it under Settings › Pages › Source: GitHub Actions.
+# Redeploys https://adnan.si/allhours-bar/ when website/ changes on master.
+# The server pulls master and builds it (/usr/local/bin/deploy-allhours-bar). The key in DEPLOY_SSH_KEY is
+# authorized there with a forced command, so it can run that script and nothing else.
+#
+# Secrets: DEPLOY_SSH_KEY (private key), DEPLOY_HOST (the origin's IP, kept out of the repo because the
+# site is behind Cloudflare) and DEPLOY_KNOWN_HOSTS (its host key line).
 name: Website
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ["website/**", ".github/workflows/website.yml"]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: website
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    defaults:
-      run:
-        working-directory: website
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - run: bun run build
+      - name: Deploy
         env:
-          BASE_PATH: /${{ github.event.repository.name }}
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: website/out
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$HOST" ] || [ -z "$KNOWN_HOSTS" ]; then
+            echo "::warning::Deploy secrets aren't set, so the website was not deployed."
+            exit 0
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "root@$HOST"

@@ -273,7 +273,7 @@ const steps = [
   <>
     Open the app. It isn&rsquo;t notarized by Apple, so macOS blocks the first launch: go to{" "}
     <span className="font-medium">System Settings › Privacy &amp; Security</span> and click{" "}
-    <span className="font-medium">Open Anyway</span>. You only do this once.
+    <span className="font-medium">Open Anyway</span>. You only do this once: updates install without it.
   </>,
   <>
     Click the clock in your menu bar and choose <span className="font-medium">Sign in with All Hours</span>.
@@ -283,7 +283,7 @@ const steps = [
 const privacy = [
   "You sign in on All Hours’ own login page, the same one pro.allhours.com uses. The app never sees your password.",
   "Your session is stored in the macOS Keychain. Settings stay on your Mac.",
-  "It talks to login.spica.com and api4.allhours.com, nothing else. No analytics, no servers of its own.",
+  "It talks to login.spica.com and api4.allhours.com, and once a week to GitHub to check for updates. No analytics, no servers of its own.",
   "It only shows the clock buttons your company already allows on the web.",
 ];
 
@@ -366,7 +366,7 @@ function Footer() {
               <GitHubMark className="size-4" />
               GitHub
             </a>
-            <a href={`${site.repo}/blob/main/LICENSE`} className="hover:text-white">
+            <a href={`${site.repo}/blob/HEAD/LICENSE`} className="hover:text-white">
               MIT License
             </a>
           </div>

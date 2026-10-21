@@ -23,6 +23,7 @@ enum DemoMode {
 
         let content = PopoverRoot()
             .environment(store)
+            .environment(Updates.shared)
             .background(Color(nsColor: .windowBackgroundColor))
         let hosting = NSHostingView(rootView: content)
         hosting.sizingOptions = [.preferredContentSize]
