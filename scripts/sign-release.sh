@@ -1,7 +1,9 @@
 #!/bin/zsh
 # Signs "All Hours Bar.app" with the self-signed "All Hours Bar" release certificate, inside out as Sparkle
-# documents it. Every build signed this way has the same identity, so after an update macOS still lets the
-# app read its saved sign-in from the Keychain, and Sparkle can check the update was signed by us too.
+# documents it. Every release signed this way has the same identity, so on top of the EdDSA key Sparkle can
+# check an update's code signature too, and no personal details end up in the download. It can't stop macOS
+# asking for the login password once after each update: without an Apple Team ID, the Keychain ties the
+# app's item to the exact build (its partition is the build's cdhash).
 #
 # The keys live in $ALLHOURS_RELEASE_DIR (default ~/.config/allhours-bar-release; see its README.txt).
 # Exits with status 2, signing nothing, when they aren't there.

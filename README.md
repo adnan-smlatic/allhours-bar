@@ -67,7 +67,6 @@ cd allhours-bar
 
 Builds are ad-hoc signed by default, so no Apple account is needed.
 To sign with your own team so Keychain access survives rebuilds, copy `Config/Signing.local.xcconfig.example` to `Config/Signing.local.xcconfig` (git-ignored) and fill in your team ID.
-With the release keys (see [Releasing](#releasing)) on your Mac, `build.sh` signs like a published release instead.
 
 ### Project layout
 
@@ -123,7 +122,7 @@ Updates use [Sparkle](https://sparkle-project.org). Installed copies read `appca
 
 The release keys live in `~/.config/allhours-bar-release` (back that folder up; its `README.txt` says what's in it):
 
-- a keychain with the self-signed **All Hours Bar** code signing certificate. Signing every release with it keeps the app's identity the same, so macOS doesn't ask again for the Keychain item after an update, and no personal details end up in the download.
+- a keychain with the self-signed **All Hours Bar** code signing certificate. Every release is signed with it, so Sparkle can also check an update's code signature, and no personal details end up in the download. It doesn't stop macOS asking for the login password once after each update before the app can read its Keychain item: without an Apple Team ID, the Keychain ties the item to the exact build. Only a Developer ID certificate fixes that.
 - `sparkle-ed25519.key`, the Sparkle update key. Its public half is `SUPublicEDKey` in `Config/Info.plist`. Without it, installed copies can't be updated anymore.
 
 To publish a release, bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` (Sparkle compares the build number), then:
