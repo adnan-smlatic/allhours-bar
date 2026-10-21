@@ -134,9 +134,8 @@ struct StatusPill: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: "circle.fill")
-                .font(.system(size: 6))
-                .symbolEffect(.pulse, isActive: live)
+            LiveDot(color: tint, live: live)
+                .frame(width: 6, height: 6)
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
         }
@@ -144,6 +143,65 @@ struct StatusPill: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(Capsule().fill(tint.opacity(0.14)))
+    }
+}
+
+/// The status dot. Its pulse is a Core Animation animation, which the window server plays on its own.
+/// `.symbolEffect(.pulse)` made SwiftUI re-render the whole menu every frame, even while it was closed
+/// (MenuBarExtra keeps its window alive), which cost ~13% CPU all day.
+private struct LiveDot: NSViewRepresentable {
+    let color: Color
+    let live: Bool
+
+    func makeNSView(context: Context) -> DotView { DotView() }
+
+    func updateNSView(_ view: DotView, context: Context) {
+        view.color = NSColor(color)
+        view.live = live
+    }
+
+    final class DotView: NSView {
+        var color = NSColor.secondaryLabelColor { didSet { needsDisplay = true } }
+        var live = false { didSet { if live != oldValue { updatePulse() } } }
+
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            wantsLayer = true
+        }
+
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+        override func draw(_ dirtyRect: NSRect) {
+            color.setFill()
+            NSBezierPath(ovalIn: bounds).fill()
+        }
+
+        override func viewDidChangeEffectiveAppearance() {
+            super.viewDidChangeEffectiveAppearance()
+            needsDisplay = true
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            updatePulse()
+        }
+
+        private func updatePulse() {
+            guard let layer else { return }
+            guard live, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+                return layer.removeAnimation(forKey: "pulse")
+            }
+            guard layer.animation(forKey: "pulse") == nil else { return }
+            let pulse = CABasicAnimation(keyPath: "opacity")
+            pulse.fromValue = 1
+            pulse.toValue = 0.3
+            pulse.duration = 0.9
+            pulse.autoreverses = true
+            pulse.repeatCount = .infinity
+            pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            pulse.isRemovedOnCompletion = false
+            layer.add(pulse, forKey: "pulse")
+        }
     }
 }
 

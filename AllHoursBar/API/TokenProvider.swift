@@ -81,7 +81,7 @@ final class TokenProvider {
         guard let token = try? await validToken() else { return nil }
         var request = URLRequest(url: URL(string: "https://login.spica.com/connect/userinfo")!, timeoutInterval: 15)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        guard let (data, _) = try? await URLSession.shared.data(for: request) else { return nil }
+        guard let (data, _) = try? await AllHoursClient.session.data(for: request) else { return nil }
         return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
     }
 
@@ -183,7 +183,7 @@ final class TokenProvider {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await AllHoursClient.session.data(for: request)
         } catch {
             throw AuthError.unavailable("Can't reach All Hours. Check your internet connection.")
         }

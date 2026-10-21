@@ -37,6 +37,14 @@ final class AllHoursClient {
         return decoder
     }()
 
+    /// Keeps nothing on disk: every response is personal and read once, so the shared session's
+    /// cache only meant SQLite writes in ~/Library/Caches on every refresh.
+    static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        return URLSession(configuration: configuration)
+    }()
+
     init(tokens: TokenProvider) {
         self.tokens = tokens
     }
@@ -85,7 +93,7 @@ final class AllHoursClient {
             let data: Data
             let response: URLResponse
             do {
-                (data, response) = try await URLSession.shared.data(for: request)
+                (data, response) = try await Self.session.data(for: request)
             } catch {
                 throw APIError.offline
             }

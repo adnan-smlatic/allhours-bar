@@ -15,6 +15,9 @@ final class Reminders: NSObject, UNUserNotificationCenterDelegate {
 
     /// Button titles shown on the notifications; they name the company's real clock buttons.
     private var actionTitles: [Kind: String] = [:]
+    /// Reminders that may still be in Notification Center. Starts with both, so one left over from before
+    /// a relaunch is still cleared; after that, withdrawing costs nothing unless one was posted.
+    private var mayBeDelivered: Set<Kind> = [.clockIn, .clockOut]
 
     func setUp() {
         center.delegate = self
@@ -37,7 +40,7 @@ final class Reminders: NSObject, UNUserNotificationCenterDelegate {
                 post(.clockIn, title: "You're not clocked in", body: body, actionTitle: action?.name)
             }
         } else {
-            center.removeDeliveredNotifications(withIdentifiers: [Kind.clockIn.rawValue])
+            withdraw(.clockIn)
         }
 
         if store.isClockOutDue {
@@ -48,11 +51,18 @@ final class Reminders: NSObject, UNUserNotificationCenterDelegate {
                      actionTitle: store.quickAction(.departure)?.name)
             }
         } else if store.status?.isWorking != true {
-            center.removeDeliveredNotifications(withIdentifiers: [Kind.clockOut.rawValue])
+            withdraw(.clockOut)
         }
     }
 
+    /// Each removal is a round trip to the notification daemon, so skip it when there's nothing to remove.
+    private func withdraw(_ kind: Kind) {
+        guard mayBeDelivered.remove(kind) != nil else { return }
+        center.removeDeliveredNotifications(withIdentifiers: [kind.rawValue])
+    }
+
     private func post(_ kind: Kind, title: String, body: String, actionTitle: String?) {
+        mayBeDelivered.insert(kind)
         actionTitles[kind] = actionTitle
         center.setNotificationCategories(Set([Kind.clockIn, .clockOut].map { kind in
             UNNotificationCategory(

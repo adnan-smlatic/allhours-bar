@@ -90,6 +90,7 @@ final class AttendanceStore {
     @ObservationIgnored private var definitions: [ClockingDefinition] = []
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var lastWake = Date.distantPast
+    @ObservationIgnored private var isAway = false
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var isDemo = false
 
@@ -110,7 +111,9 @@ final class AttendanceStore {
         observeSystemEvents()
         ticker = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(20))
+                // Everything on screen counts whole minutes, so wake once a minute, just after it turns.
+                let untilNextMinute = 60 - Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 60)
+                try? await Task.sleep(for: .seconds(untilNextMinute + 0.05), tolerance: .seconds(1))
                 await self?.tick()
             }
         }
@@ -129,6 +132,7 @@ final class AttendanceStore {
 
     func popoverDidOpen() {
         guard !isDemo else { return }
+        isAway = false
         now = Date()
         if Date().timeIntervalSince(lastUpdated ?? .distantPast) > 20 {
             Task { await refresh() }
@@ -136,6 +140,8 @@ final class AttendanceStore {
     }
 
     private func tick() async {
+        // Screen off or locked: nobody sees the menu bar. Waking up refreshes everything.
+        guard !isAway else { return }
         now = Date()
         reminders.evaluate(self)
         if phase == .signedIn, Date().timeIntervalSince(lastUpdated ?? .distantPast) > 5 * 60 {
@@ -315,6 +321,10 @@ final class AttendanceStore {
             if kinds.isEmpty { await loadDefinitions() }
             guard let userId = profile?.userId else { return }
 
+            // The three reads are independent, so they share one round trip instead of taking three.
+            async let todays = soft { try await self.todaysEvents(method: method, userId: userId) }
+            async let current = soft { try await self.client.get(CurrentBalance.self, "Presence/\(userId)") }
+
             switch method {
             case .web, .password:
                 apply(try await client.get(ClockResponse.self, "Clocks/Web"))
@@ -328,10 +338,10 @@ final class AttendanceStore {
                     }
             }
 
-            if let list = try await soft({ try await self.todaysEvents(method: method, userId: userId) }) {
+            if let list = try await todays {
                 events = list
             }
-            if let value = try await soft({ try await self.client.get(CurrentBalance.self, "Presence/\(userId)") }) {
+            if let value = try await current {
                 balance = value
                 if value.balanceResponseMode == 2, let minutesVsPlan = value.balance {
                     now = Date()
@@ -609,20 +619,34 @@ final class AttendanceStore {
 
     private func observeSystemEvents() {
         let workspace = NSWorkspace.shared.notificationCenter
+        let distributed = DistributedNotificationCenter.default()
         for name in [NSWorkspace.didWakeNotification, NSWorkspace.sessionDidBecomeActiveNotification, NSWorkspace.screensDidWakeNotification] {
             observers.append(workspace.addObserver(forName: name, object: nil, queue: .main) { _ in
                 Task { @MainActor in await AttendanceStore.shared.handleWake() }
             })
         }
-        observers.append(DistributedNotificationCenter.default().addObserver(
+        observers.append(distributed.addObserver(
             forName: Notification.Name("com.apple.screenIsUnlocked"), object: nil, queue: .main
         ) { _ in
             Task { @MainActor in await AttendanceStore.shared.handleWake() }
+        })
+
+        for name in [NSWorkspace.screensDidSleepNotification, NSWorkspace.sessionDidResignActiveNotification] {
+            observers.append(workspace.addObserver(forName: name, object: nil, queue: .main) { _ in
+                Task { @MainActor in AttendanceStore.shared.isAway = true }
+            })
+        }
+        observers.append(distributed.addObserver(
+            forName: Notification.Name("com.apple.screenIsLocked"), object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in AttendanceStore.shared.isAway = true }
         })
     }
 
     /// Back at the Mac: refresh right away so the clock-in reminder can fire while you're sitting down.
     private func handleWake() async {
+        isAway = false
+        now = Date()
         guard phase == .signedIn, Date().timeIntervalSince(lastWake) > 30 else { return }
         lastWake = Date()
         try? await Task.sleep(for: .seconds(3)) // give Wi-Fi a moment
